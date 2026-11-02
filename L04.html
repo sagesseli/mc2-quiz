@@ -126,6 +126,11 @@ textarea{width:100%;min-height:200px;border:1px solid var(--line);border-radius:
 .chip.punct{color:var(--bad);font-weight:700;min-width:2.8em;border-color:var(--bad)}
 .passage u.nw{text-decoration:underline 2px var(--warm);text-underline-offset:4px;font-weight:700}
 .nwnote{font-family:var(--f-body);font-size:.82rem;color:var(--warm);margin-top:4px}
+
+.pick{display:flex;flex-wrap:wrap;gap:8px}
+.pick.names{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+.pick.names .btn{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 14px}
+.pick.names .btn b{font-size:1.15rem}.pick.names .btn small{color:var(--muted);font-size:.8rem}
 </style></head><body><div class="wrap" id="app"></div><script>window.MODE="class";</script><script src="config.js"></script><script>/* picture / practical-text builders used by lesson data files */
 window.P=(function(){
   const e=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -227,19 +232,20 @@ const L=window.LESSON, MODE=window.MODE||"tutor", CFG=window.QUIZ_CONFIG||{};
 const CATALOG={
   vocab:{han:"詞",name:"生詞",desc:"看句子，選生詞"},
   mw:{han:"量",name:"量詞",desc:"量詞複習"},
+  zi:{han:"音",name:"字辨",desc:"多音字：選出正確的漢語拼音"},
   gram:{han:"法",name:"語法",desc:"本課語法"},
   order:{han:"排",name:"排句子",desc:"點詞語，排出正確的句子"},
   pic:{han:"圖",name:"看圖回答",desc:"TOCFL 圖片題：看圖，選最合適的句子"},
   cloze:{han:"填",name:"短文填空",desc:"TOCFL 選詞填空：讀短文，選出空格的答案"},
   read:{han:"讀",name:"閱讀理解",desc:"讀訊息、公告和短文，回答問題"}
 };
-const ORDER=["vocab","mw","gram","order","pic","cloze","read"];
+const ORDER=["vocab","mw","zi","gram","order","pic","cloze","read"];
 const SECTIONS=ORDER.filter(id=>L.q.some(q=>q.s===id)).map(id=>Object.assign({id},CATALOG[id],(L.desc||{})[id]?{desc:L.desc[id]}:{}));
 const FIXED=new Set(["pic","cloze","read"]);
 const Q=L.q;
 const app=document.getElementById("app");
 const KEY=`mc2-L${String(L.no).padStart(2,"0")}-${MODE}-v1`;
-const SKEY="mc2-student-v1";
+const SKEY="mc2-student-v2";
 const lessonCode="L"+String(L.no).padStart(2,"0");
 const META={book:"時代華語 2",range:`第 ${L.no} 課`,title:`第${L.cn||L.no}課 完課測驗`,sub:L.title};
 
@@ -308,7 +314,7 @@ function home(){
     :`同學，你好！這次測驗有 ${SECTIONS.length} 個部分，一共 ${Q.length} 題。每題做完會馬上告訴你對不對。全部做完，把成績傳給老師。<br>（系統會記錄作答時間和離開畫面的次數，成績單上老師看得到。）`;
   const locked=MODE==="class";
   app.innerHTML=`${header()}
-  ${MODE==="class"?`<div class="who-bar"><span>${esc(student.klass)}　${esc(student.seat)}號　<b style="color:var(--ink)">${esc(student.name)}</b>${store.attempt>1?`　· 第 ${store.attempt} 次`:""}</span><button class="btn" id="chg" style="padding:4px 12px;font-size:.85rem">不是我</button></div>`:""}
+  ${MODE==="class"?`<div class="who-bar"><span>${esc(student.klass)}　${esc(student.seat)}　<b style="color:var(--ink)">${esc(student.name)}</b>${store.attempt>1?`　· 第 ${store.attempt} 次`:""}</span><button class="btn" id="chg" style="padding:4px 12px;font-size:.85rem">不是我</button></div>`:""}
   <p class="lede">${lede}</p>
   <div class="secs">${SECTIONS.map(s=>{const n=Q.filter(q=>q.s===s.id).length,r=store.results[s.id];
     const dis=locked&&r&&!store.submitted?"disabled":"";
@@ -333,20 +339,29 @@ function home(){
 }
 
 function signin(){
-  app.innerHTML=`${header()}
-  <div class="card">
-    <h2>請先寫你的資料</h2>
-    <div class="field"><label for="k">班級</label><input id="k" autocomplete="off" placeholder="例如：週一晚上班" value="${esc(CFG.DEFAULT_CLASS||"")}"></div>
-    <div class="field"><label for="s">座號／學號</label><input id="s" autocomplete="off" inputmode="numeric" placeholder="例如：7"></div>
-    <div class="field"><label for="n">姓名（中文名字）</label><input id="n" autocomplete="name" placeholder="例如：王美心"></div>
-    <div class="row"><button class="btn primary" id="go">開始</button></div>
-    <p class="note" id="err"></p>
-  </div>`;
-  document.getElementById("go").onclick=()=>{
-    const v=id=>document.getElementById(id).value.trim();
-    if(!v("k")||!v("s")||!v("n")){document.getElementById("err").textContent="三個都要寫喔！";return}
-    student={klass:v("k"),seat:v("s"),name:v("n")};ls(SKEY,student);home();
+  const R=CFG.ROSTER||{},classes=Object.keys(R);
+  let k=classes.length===1?classes[0]:"";
+  const draw=()=>{
+    const list=k?(R[k]||[]):[];
+    app.innerHTML=`${header()}
+    <div class="card">
+      <h2>你是誰？</h2>
+      <div class="field"><label>1. 選你的班級</label><div class="pick">${classes.map(c=>`<button class="btn${c===k?" primary":""}" data-k="${esc(c)}">${esc(c)}</button>`).join("")}</div></div>
+      ${!k?"":list.length?`<div class="field"><label>2. 點你的名字</label><div class="pick names">${list.map((p,i)=>`<button class="btn" data-i="${i}"><b>${esc(p.name)}</b><small>${esc(p.id)}</small></button>`).join("")}</div></div>
+        <p class="note">找不到你的名字？請告訴老師。</p>`
+      :`<div class="field"><label for="n">2. 寫你的中文名字</label><input id="n" autocomplete="name" placeholder="例如：王美心"></div>
+        <div class="row"><button class="btn primary" id="go">開始</button></div><p class="note" id="err"></p>`}
+    </div>`;
+    app.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{k=b.dataset.k;draw()});
+    app.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const p=list[+b.dataset.i];
+      if(!ask(`你是「${p.name}」（${p.id}）嗎？`))return;
+      student={klass:k,seat:p.id,name:p.name};ls(SKEY,student);home()});
+    const go=document.getElementById("go");
+    if(go)go.onclick=()=>{const n=document.getElementById("n").value.trim().replace(/\s+/g,"");
+      if(!n){document.getElementById("err").textContent="請寫你的名字！";return}
+      student={klass:k,seat:"",name:n};ls(SKEY,student);home()};
   };
+  draw();
 }
 
 function start(sec,onlyIds){
@@ -493,7 +508,7 @@ function logLines(){
 function totals(){let sc=0,tt=0;SECTIONS.forEach(s=>{const r=store.results[s.id],n=Q.filter(q=>q.s===s.id).length;tt+=n;if(r)sc+=r.score});return{sc,tt}}
 function reportText(){
   const lines=[`時代華語2 第${L.no}課 完課測驗（${L.title}）`,"時間："+fmtDate(new Date()),""];
-  if(MODE==="class"&&student)lines.splice(1,0,`${student.klass} ${student.seat}號 ${student.name}`);
+  if(MODE==="class"&&student)lines.splice(1,0,`${student.klass} ${student.seat} ${student.name}`);
   let sc=0,tt=0;
   SECTIONS.forEach(s=>{const r=store.results[s.id],n=Q.filter(q=>q.s===s.id).length;
     tt+=n;const ms=LOG().secMs[s.id];if(r){sc+=r.score;lines.push(`${s.name}：${r.score}/${r.total}${ms?`（${dur(ms)}）`:""}`)}else lines.push(`${s.name}：還沒做（0/${n}）`)});
