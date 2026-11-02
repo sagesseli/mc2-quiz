@@ -2,7 +2,7 @@
    ROSTER：每一班的學生名單。新學生加入，就照同樣的格式加一行 {id:"學號", name:"姓名"}。
    名單是空的班級（例如個人班），學生會自己寫名字。 */
 window.QUIZ_CONFIG = {
-  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyUZQV-a7orYe_omnppgqQNiVdQwDQIk--DdhvBFco_fZ0swD9LtnCo8MCZDhLPP2DV/exec",
+  SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxH8Z2Xbc7N_r4kRD4wx7cbrB1xll5EZPrlTfjA0dFeXPKqzxs9MWLtl2CiJToYlzk/exec",
   ROSTER: {
     "國專部G春": [
       {id:"I140H104", name:"阮清進"},
