@@ -6,7 +6,7 @@ window.QUIZ_CONFIG = {
   ROSTER: {
     "國專部G春": [
       {id:"I140H104", name:"阮清進"},
-      {id:"I140H120", name:"阮曾利"},
+      {id:"I140H120", name:"阮晉利"},
       {id:"I140H123", name:"黃嘉興"},
       {id:"I140H125", name:"葉進倫"},
       {id:"I140K122", name:"桃德孝"},
